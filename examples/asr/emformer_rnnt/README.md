@@ -2,6 +2,34 @@
 
 This directory contains sample implementations of training and evaluation pipelines for an Emformer RNN-T streaming ASR model.
 
+## Manual Changes For Local Development
+- sgp is an alias to a custom bash script. Omit if necessary
+
+### How to Train Your Own Model
+1. Download the sentence piece model from [here](https://github.com/pytorch/audio/tree/main/examples/asr/emformer_rnnt#model-types) and save into `./librispeech`
+
+2. Download the Librispeech dataset and generate dataset mean and std
+```bash
+mkdir datasets
+sgp python3 global_stats.py --model-type librispeech --dataset-path ./datasets/
+```
+
+3. Train
+```bash
+sgp python3 my_train.py --model-type librispeech --dataset-path ./datasets/ --sp-model-path ./librispeech/spm_bpe_4096_librispeech.model --gpus 1 --epochs 1 --debug --global-stats-path ./global_stats.json
+```
+
+### How to run the pretained pipeline
+1. Run the pretrained pipeline
+```bash
+python3 pipeline_blank_model.py --model-type librispeech --dataset-path ./
+```
+
+### Launch Tensorboard
+```bash
+sgp python3 -m tensorboard.main --logdir ./lightning_logs/
+```
+
 ## Usage
 
 ### Training

@@ -207,11 +207,11 @@ class LibriSpeechRNNTModule(LightningModule):
         dataset = torch.utils.data.ConcatDataset(
             [
                 CustomDataset(
-                    torchaudio.datasets.LIBRISPEECH(self.librispeech_path, url="dev-clean"),
+                    torchaudio.datasets.LIBRISPEECH(self.librispeech_path, url="dev-clean", download=True),
                     1000,
                 ),
                 CustomDataset(
-                    torchaudio.datasets.LIBRISPEECH(self.librispeech_path, url="dev-other"),
+                    torchaudio.datasets.LIBRISPEECH(self.librispeech_path, url="dev-other", download=True),
                     1000,
                 ),
             ]
@@ -225,6 +225,6 @@ class LibriSpeechRNNTModule(LightningModule):
         return dataloader
 
     def test_dataloader(self):
-        dataset = torchaudio.datasets.LIBRISPEECH(self.librispeech_path, url="test-clean")
+        dataset = torchaudio.datasets.LIBRISPEECH(self.librispeech_path, url="test-clean", download=True)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, collate_fn=self._test_collate_fn)
         return dataloader

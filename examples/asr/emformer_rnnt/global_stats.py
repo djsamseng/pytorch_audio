@@ -72,9 +72,9 @@ def get_dataset(args):
     if args.model_type == MODEL_TYPE_LIBRISPEECH:
         return torch.utils.data.ConcatDataset(
             [
-                torchaudio.datasets.LIBRISPEECH(args.dataset_path, url="train-clean-360"),
-                torchaudio.datasets.LIBRISPEECH(args.dataset_path, url="train-clean-100"),
-                torchaudio.datasets.LIBRISPEECH(args.dataset_path, url="train-other-500"),
+                torchaudio.datasets.LIBRISPEECH(args.dataset_path, url="train-clean-360", download=True),
+                torchaudio.datasets.LIBRISPEECH(args.dataset_path, url="train-clean-100", download=True),
+                torchaudio.datasets.LIBRISPEECH(args.dataset_path, url="train-other-500", download=True),
             ]
         )
     elif args.model_type == MODEL_TYPE_TEDLIUM3:
