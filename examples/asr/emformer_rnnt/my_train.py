@@ -198,7 +198,9 @@ def cli_main():
     print("Fit!")
 
 
-# sgp python3 train.py --model-type librispeech --dataset-path ./datasets/ --sp-model-path ./librispeech/spm_bpe_4096_librispeech.model --gpus 1 --epochs 1 --debug --global-stats-path ./global_stats.json
+# sgp python3 my_train.py --model-type librispeech --dataset-path ./datasets/ --sp-model-path ./librispeech/spm_bpe_4096_librispeech.model --gpus 1 --epochs 1 --global-stats-path ./global_stats.json
 # sgp python3 -m tensorboard.main --logdir ./lightning_logs/
+# Version 28 = 249 my_transform
+# Version 30 = 80 mel
 if __name__ == "__main__":
     cli_main()

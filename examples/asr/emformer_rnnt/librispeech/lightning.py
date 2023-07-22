@@ -2,6 +2,8 @@ import os
 from functools import partial
 from typing import List
 
+import matplotlib.pylab as plt
+
 import sentencepiece as spm
 import torch
 import torchaudio
@@ -17,6 +19,10 @@ from common import (
 )
 from pytorch_lightning import LightningModule
 from torchaudio.models import emformer_rnnt_base, RNNTBeamSearch
+
+import sys
+sys.path.insert(1, "/home/samuel/dev/tess/audio")
+import my_transform
 
 
 class CustomDataset(torch.utils.data.Dataset):
@@ -111,10 +117,35 @@ class LibriSpeechRNNTModule(LightningModule):
         return targets, lengths
 
     def _train_extract_features(self, samples: List):
+        # samples[0] = waveform, sr, english transcript, speaker id, chapter id, utterance id
+        # waveform = [1, len(waveform)]
         mel_features = [spectrogram_transform(sample[0].squeeze()).transpose(1, 0) for sample in samples]
+        my_transform_features = [
+            piecewise_linear_log(torch.Tensor(my_transform.transform_samples_cpu(samples=x[0][0].numpy(), sr=x[1])).transpose(1, 0))
+            for x in samples
+        ]
+        # spectrogram_transform returns [n_mels, len(waveform)//hop_length + 1]
+        # transpose(1,0) returns [len(waveform)//hop_length + 1, n_mels]
         features = torch.nn.utils.rnn.pad_sequence(mel_features, batch_first=True)
         features = self.train_data_pipeline(features)
         lengths = torch.tensor([elem.shape[0] for elem in mel_features], dtype=torch.int32)
+        # train_data_pipeline masks, subtracts from global stats mean and std and converts to log scale
+        if False:
+            features_example = features[0].transpose(1, 0).cpu().numpy()
+            plt.pcolormesh(features_example)
+            plt.figure()
+            mel_features_example = piecewise_linear_log(mel_features[0]).transpose(1, 0).cpu().numpy()
+            plt.pcolormesh(mel_features_example)
+            my_transform_features_example = my_transform_features[0]#my_transform.transform_samples_cpu(samples=samples[0][0][0].numpy(), sr=16000)
+            plt.figure()
+            plt.pcolormesh(my_transform_features_example)
+            plt.tight_layout()
+            # features: [80, 1558] mel: [80, 1508] to_graph: [199, 1507]
+            print("Features:", features_example.shape, "Mel:", mel_features_example.shape, "My:", my_transform_features_example.shape)
+            plt.show()
+        if False:
+            features = torch.nn.utils.rnn.pad_sequence(my_transform_features, batch_first=True)
+            lengths = torch.tensor([elem.shape[0] for elem in my_transform_features], dtype=torch.int32)
         return features, lengths
 
     def _valid_extract_features(self, samples: List):
@@ -125,12 +156,14 @@ class LibriSpeechRNNTModule(LightningModule):
         return features, lengths
 
     def _train_collate_fn(self, samples: List):
+        # samples[0] = waveform, sr, english transcript, speaker id, chapter id, utterance id
+        # waveform = [1, len(waveform)]
         features, feature_lengths = self._train_extract_features(samples)
         targets, target_lengths = self._extract_labels(samples)
         return Batch(features, feature_lengths, targets, target_lengths)
 
     def _valid_collate_fn(self, samples: List):
-        features, feature_lengths = self._valid_extract_features(samples)
+        features, feature_lengths = self._train_extract_features(samples)
         targets, target_lengths = self._extract_labels(samples)
         return Batch(features, feature_lengths, targets, target_lengths)
 
@@ -151,6 +184,7 @@ class LibriSpeechRNNTModule(LightningModule):
             prepended_targets,
             prepended_target_lengths,
         )
+        #src_lengths -= 1
         loss = self.loss(output, batch.targets, src_lengths, batch.target_lengths)
         self.log(f"Losses/{step_type}_loss", loss, on_step=True, on_epoch=True)
         return loss
